@@ -146,8 +146,7 @@ class SpeedBinLearner:
     vals = np.asarray(vals, dtype=float)
     lo, hi = np.asarray(bounds, dtype=float).T
     tol = 1e-5 * np.maximum(np.abs(hi), 1.0)
-    with np.errstate(invalid='ignore'):
-      return np.isfinite(vals) & (vals >= lo - tol) & (vals <= hi + tol)
+    return np.isfinite(vals) & (vals >= lo - tol) & (vals <= hi + tol)
 
   def _centers_match(self, cached_centers) -> bool:
     # a legacy cache has no centers; length first so allclose never sees a shape mismatch
@@ -210,8 +209,6 @@ class SpeedBinLearner:
       if len(cached_lafs) != n_bins or len(cached_frictions) != n_bins:
         cloudlog.info("speed-dep: cache bin count mismatch, restarting learning")
         return
-      bin_ok = (self._within_bounds(cached_lafs, self.speed_bin_lat_accel_factor_bounds)
-                & self._within_bounds(cached_frictions, self.speed_bin_friction_bounds))
       decay = float(cache_ltp.decay)
       if not np.isfinite(decay):
         cloudlog.warning("speed-dep: cached decay non-finite, restarting learning")
@@ -219,6 +216,8 @@ class SpeedBinLearner:
       # torqued only writes a decay inside this range; the clip guards a hand-edited cache
       decay = float(np.clip(decay, torqued.MIN_FILTER_DECAY, torqued.MAX_FILTER_DECAY))
 
+      bin_ok = (self._within_bounds(cached_lafs, self.speed_bin_lat_accel_factor_bounds)
+                & self._within_bounds(cached_frictions, self.speed_bin_friction_bounds))
       if not bin_ok.all():
         cloudlog.warning(f"speed-dep: cached bins {np.flatnonzero(~bin_ok).tolist()} non-finite or outside sanity bounds, reseeding them")
       # values only from a valid cache, as upstream does for its globals
