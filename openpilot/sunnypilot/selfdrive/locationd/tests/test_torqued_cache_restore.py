@@ -150,10 +150,24 @@ class TestCacheRestore:
     assert_untouched(est, seeds)
 
 
-  def test_nan_in_one_bin_rejects_whole_cache(self, fake_params):
-    """Upstream drops the entire cache on any bad content (one try/except, full reset on NaN).
-    The bins are one interpolated tune, so a partial restore would leave a step between a
-    cached bin and a re-seeded neighbour; the whole cache goes, points included."""
+  def _assert_only_bin_reseeded(self, est, seeds, bad, lafs, frictions, decay):
+    """The bad bin is back on its seed at MIN decay; every other bin restored at the cache's."""
+    seed_lafs, seed_frictions = seeds
+    for i in range(len(est.speed_bin_bounds)):
+      filters = est.speed_bin_filtered[i]
+      if i == bad:
+        assert filters['latAccelFactor'].x == seed_lafs[i]
+        assert filters['frictionCoefficient'].x == seed_frictions[i]
+        assert est.speed_bin_decays[i] == MIN_FILTER_DECAY
+        assert filters['latAccelFactor'].alpha == pytest.approx(DT_MDL / (MIN_FILTER_DECAY + DT_MDL))
+      else:
+        assert filters['latAccelFactor'].x == lafs[i]
+        assert filters['frictionCoefficient'].x == frictions[i]
+        assert est.speed_bin_decays[i] == decay
+
+  def test_nan_in_one_bin_reseeds_only_that_bin(self, fake_params):
+    """One bad bin must not cost the drive every other bin's learning. Its points still load,
+    as they pass their own checks, so it re-learns from them."""
     est = TorqueEstimator(make_cp())
     seeds = seed_values(est)
     lafs, frictions = in_bounds_values(est)
@@ -161,30 +175,33 @@ class TestCacheRestore:
 
     est._restore_ext_cache(_cache(decay=200.0), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions, _one_point_per_bin(est)))
 
-    assert_untouched(est, seeds)
+    self._assert_only_bin_reseeded(est, seeds, 1, lafs, frictions, 200.0)
+    assert all(len(b) == 1 for b in est.speed_bin_points)
 
-  def test_inf_friction_rejects_whole_cache(self, fake_params):
+  def test_inf_friction_reseeds_only_that_bin(self, fake_params):
     est = TorqueEstimator(make_cp())
     seeds = seed_values(est)
     lafs, frictions = in_bounds_values(est)
     frictions[-1] = float('inf')
-    est._restore_ext_cache(_cache(), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions))
-    assert_untouched(est, seeds)
+    est._restore_ext_cache(_cache(decay=200.0), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions))
+    self._assert_only_bin_reseeded(est, seeds, len(est.speed_bin_bounds) - 1, lafs, frictions, 200.0)
 
-  def test_value_outside_sanity_bounds_rejected(self, fake_params):
-    """Same clip range the learner applies to its SVD output; a cached value past it cannot
-    have come from this config."""
+  def test_value_outside_sanity_bounds_reseeds_only_that_bin(self, fake_params):
+    """Same clip range the learner applies to its SVD output. A cached value past it was
+    learned under other bounds (a seed refresh that kept seed_version, less-restrict switched
+    off), so that bin restarts from its seed."""
     est = TorqueEstimator(make_cp())
     seeds = seed_values(est)
     lafs, frictions = in_bounds_values(est)
     lafs[2] = est.speed_bin_lat_accel_factor_bounds[2][1] * 1.5
-    est._restore_ext_cache(_cache(), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions))
-    assert_untouched(est, seeds)
+    est._restore_ext_cache(_cache(decay=200.0), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions))
+    self._assert_only_bin_reseeded(est, seeds, 2, lafs, frictions, 200.0)
 
+    est = TorqueEstimator(make_cp())
     lafs, frictions = in_bounds_values(est)
     frictions[0] = est.speed_bin_friction_bounds[0][0] - 0.05
-    est._restore_ext_cache(_cache(), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions))
-    assert_untouched(est, seeds)
+    est._restore_ext_cache(_cache(decay=200.0), cache_CP=est.CP, cache_sp=_sp(est, lafs, frictions))
+    self._assert_only_bin_reseeded(est, seeds, 0, lafs, frictions, 200.0)
 
   def test_value_on_clip_bound_accepted(self, fake_params):
     """A filter railed at its clip bound reads back through Float32 a rounding step past it."""
