@@ -54,8 +54,8 @@ zoompilot vUNRELEASED
 * Fixes
   * Lane Keep off pauses steering and keeps cruise, with a "Lateral Disabled" alert.
   * No false "Steering Assist Temporarily Unavailable".
-  * Main off at a stop turns steering off.
-  * Wheel cancel no longer turns cruise main off.
+  * Turning cruise main off at a stop, on the brake, reliably turns steering off.
+  * Pressing cancel on the wheel no longer switches cruise off. RES resumes as normal.
   * Export CX-5 and CX-9 (JM7 VINs) are recognised.
   * NZ/AUS: set speed matches the dash.
   * Fixed sunnylink backup and restore.
