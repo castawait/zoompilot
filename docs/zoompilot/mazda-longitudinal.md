@@ -640,22 +640,23 @@ HBC light. With the radar silenced the controller relays the bit itself from
 carstate's `hbc_request`, read only from a fresh CAM_LANEINFO frame. BIT2 is also the auto
 high-beam arming bit, which is why it is not a settle input (above).
 
-## No advertised lead
+## Lead on the dash, empty tracks
 
-The camera needs the silenced radar's frames on the bus, not its objects. We send the static
-frame and six empty tracks, and CRZ_CTRL keeps RADAR_HAS_LEAD and RADAR_LEAD_RELATIVE_DISTANCE at
-0, the shape of the upstream port. This keeps stock's pairing (RADAR_HAS_LEAD = 1 never came with
-all six slots empty, has_lead = 0 always came with phase 0) without inventing a track. Stock
-itself shows all six slots empty 23% of the time across 445 segments.
+The camera needs the silenced radar's frames on the bus, not its objects, so the static frame and
+six tracks are the stock empty capture, the shape of the upstream port. The cluster draws the
+lead from CRZ_CTRL: RADAR_HAS_LEAD follows `leadVisible`, and RADAR_LEAD_RELATIVE_DISTANCE is
+stock's closeness bucket, 3 behind a stopped lead and 2 while following. It follows perception,
+engaged or not, as stock does. Stock shows has_lead = 1 with every slot empty in only 8 of 1.1M
+frames, so this pairing is the one thing here not attested by stock; watch for camera faults.
 
-Earlier builds advertised the vision lead in 0x364 and RADAR_HAS_LEAD. A vision lead moves like no
-radar track: the range wanders metres at the model rate, and a lane change teleports it (route
+Earlier builds also put the vision lead in 0x364. A vision lead moves like no radar track: the
+range wanders metres at the model rate, and a lane change teleports it (route
 4a3fe2b0e8aec968/0000006d: 27.7 to 45.2 m in one frame, and the object a lane over at the
 capture's -8 degree angle). A 2018 CX-5 (B61L camera) latched CAM_LKAS ERR_BIT_1 and ERR_BIT_2
-on the highway with that advertisement and no EPS fault; route 0000002e with alpha long off was
-clean. Smoothing it into a radar-like track (danger-unstable 0f9cd48e11) was replaced by sending
-nothing, since no other port emulates objects and nothing measured needs them. The stop-and-go
-grammar (STOPPING, RESUME_UNLATCHING, ACC_ACTIVE_2) is carried by CRZ_INFO and CRZ_CTRL alone.
+on the highway with that track and no EPS fault; route 0000002e with alpha long off was clean.
+Smoothing it into a radar-like track (danger-unstable 0f9cd48e11) was replaced by sending no
+object at all. The stop-and-go grammar (STOPPING, RESUME_UNLATCHING, ACC_ACTIVE_2) is carried by
+CRZ_INFO and CRZ_CTRL alone.
 
 ### Track frame content
 
@@ -789,10 +790,11 @@ the dash lane indicators, so those two stay zeroed.
 - Slewing the release command up from -1.024 (00000053 t+714.8) or pre-ramping toward the plan
   (00000100 t+353): outside the band the camera accepts.
 - A lead-distance cap on the breakaway: 4 of 34 stock breakaways had 0x364 occupied.
-- Advertising the vision lead in 0x364 and RADAR_HAS_LEAD, in every form tried: tied to
+- Advertising the vision lead in the 0x364 track, in every form tried: tied to
   engagement (0000004d t+212), with a fabricated stand-in over a vision gap (10.25 m ghost at
   22 m/s), raw (lane-change teleport, 2018 CX-5 camera fault, 4a3fe 0000006d) and smoothed into a
-  radar-like track (0f9cd48e11). Empty tracks replaced all of them.
+  radar-like track (0f9cd48e11). Empty tracks replaced all of them; the dash lead rides
+  RADAR_HAS_LEAD alone.
 - Reporting `cruiseState.standstill` under op-long: deadlocked every stop.
 - Relaying the camera's TJA mode fields: dash indicators flapped (0000010b).
 - Pressing RES to release a hold under op-long: stock never does (0 of 23), and it double-writes
