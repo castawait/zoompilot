@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 
 jetlink's comma side on this fork's tinygrad. jetlink's own tests run it on a
 numpy stand-in, since its CI installs neither tinygrad nor openpilot; what
-only the real one can show is here: the adapter's reset of the small model
+only the real one can show is here: the reset of the small model
 on a real TinyJit, on the buffers each of this fork's ModelStates keeps, and
 the large model's frame path from the camera buffer to the wire through
 modeld's warp.
@@ -43,8 +43,10 @@ def assigned(path: Path, cls: str) -> set[str]:
 
 
 def small_reset(model):
-  """The adapter's reset of `model`, captured as jetlink does before the frame loop."""
-  return jetlink_adapter.adapter().small_reset(model)
+  """The reset of `model`, captured as jetlink does before the frame loop: the
+  adapter's, else jetlink's own, which knows this fork's ModelStates."""
+  from jetlink.openpilot.warp import prepare_reset
+  return jetlink_adapter.adapter().small_reset(model) or prepare_reset(model)
 
 
 class TestSmallReset(OpenpilotTestCase):
@@ -108,11 +110,8 @@ class TestSmallReset(OpenpilotTestCase):
     np.testing.assert_array_equal(packed, 0)
     np.testing.assert_array_equal(adapter.input_queues['packed_npy_inputs'].numpy(), 0)
 
-  def test_another_shape_is_jetlinks_to_reset(self):
-    self.assertIsNone(small_reset(SimpleNamespace(input_queues={})))
-
   def test_it_reads_what_openpilots_model_states_have(self):
-    # small_reset reads these names; a sync that renames one breaks every
+    # the reset reads these names; a sync that renames one breaks every
     # fallback to the small model
     adapters = ROOT / 'openpilot/sunnypilot/modeld_v2/model_adapters.py'
     for path, cls, names in ((ROOT / 'openpilot/selfdrive/modeld/modeld.py', 'ModelState',

@@ -111,21 +111,6 @@ def _adapter_class():
       # steers again on its own
       return bool(sm['carControl'].enabled or sm['carControlSP'].mads.enabled)
 
-    def small_reset(self, small):
-      # modeld_v2's ModelState keeps its history on its bundle's adapter: a
-      # native bundle's laid out as stock modeld's, a legacy one's in queues on
-      # the GPU and numpy inputs. Not reset_warmup_buffers(), which compiles on
-      # the failure frame. Stock modeld's ModelState is Stock's
-      bundle = getattr(small, 'adapter', None)
-      if bundle is None:
-        return super().small_reset(small)
-      from jetlink.openpilot.warp import reset_for_stock, reset_queues
-      prev_desire = getattr(small, 'prev_desire', None)
-      if bundle.is_native:
-        return reset_for_stock(bundle, prev_desire)
-      queues = [q for q in bundle.input_queues.values() if q.device != 'NPY']
-      return reset_queues(queues, bundle.numpy_inputs.values(), prev_desire)
-
   return Adapter
 
 
