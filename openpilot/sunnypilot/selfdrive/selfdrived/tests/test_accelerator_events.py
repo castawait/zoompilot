@@ -7,8 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 from types import SimpleNamespace
 from unittest import mock
 
-from jetlink.openpilot import events as swap_events
-
 from openpilot.cereal import custom, messaging
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.selfdrive.selfdrived.alertmanager import AlertManager
@@ -305,6 +303,7 @@ class TestOptionalProcesses(OpenpilotTestCase):
 
 class TestJetlink(AcceleratorEventsTest):
   def test_the_ticks_are_jetlinks_seconds(self):
+    from jetlink.openpilot import events as swap_events  # unittest's runner has no jetlink_repo on the path
     from openpilot.common.realtime import DT_CTRL
     self.assertEqual((OFFER_TICKS, HANDBACK_TICKS, SWITCHING_TICKS),
                      tuple(round(s / DT_CTRL) for s in (swap_events.OFFER_S, swap_events.HANDBACK_S, swap_events.SWITCHING_S)))

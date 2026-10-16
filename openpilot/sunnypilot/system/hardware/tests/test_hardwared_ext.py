@@ -4,8 +4,6 @@ Copyright (c) 2026-, Zeph Leggett.
 This file is part of zoompilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import jetlink.openpilot as jl
-
 from openpilot.common.params import ParamKeyFlag
 from openpilot.sunnypilot.selfdrive.car.stock_ecu_handback import HANDBACK_WAIT_T, REQUEST_KEY
 from openpilot.sunnypilot.selfdrive.car.tests.fakes import FakeClock, FakeParams, answer
@@ -190,6 +188,7 @@ class TestPowerOff:
     assert ext.shutdown_ready(True, 12.0)
 
   def test_the_cap_outlasts_jetlinks_own_deadline(self):
+    import jetlink.openpilot as jl  # unittest's runner has no jetlink_repo on the path
     assert ACCELERATOR_OFF_WAIT_T == jl.SHUTDOWN_TIMEOUT + 5
 
   def test_the_unavailable_alert_follows_the_reason(self, monkeypatch):
