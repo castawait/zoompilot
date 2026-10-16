@@ -55,13 +55,14 @@ _AGNOS = os.path.isfile('/AGNOS')
 
 def _params_dir() -> Path:
   """The params store's directory, by params.cc and hw.h's rule: PARAMS_ROOT,
-  else /data/params on a device and ~/.comma<OPENPILOT_PREFIX>/params
-  elsewhere, then /<OPENPILOT_PREFIX, or d>. Per call, so it follows a prefix
-  as Params does; the environment only, so it never raises."""
+  else /data/params on a device and $HOME/.comma<OPENPILOT_PREFIX>/params
+  elsewhere, then /<OPENPILOT_PREFIX, or d>. Stock.params_dir() without
+  jetlink. Per call, so it follows a prefix as Params does; the environment
+  only, so it never raises."""
   prefix = os.environ.get('OPENPILOT_PREFIX', '')
   root = os.environ.get('PARAMS_ROOT')
   if root is None:
-    root = '/data/params' if _AGNOS else os.path.join(os.environ.get('HOME', ''), '.comma' + prefix, 'params')
+    root = '/data/params' if _AGNOS else os.environ.get('HOME', '') + '/.comma' + prefix + '/params'
   return Path(root) / os.environ.get('OPENPILOT_PREFIX', 'd')
 
 
@@ -142,11 +143,10 @@ _making = threading.Lock()
 def hooks():
   """jetlink.openpilot.hooks.Hooks over this adapter, or the link off."""
   global _hooks
-  if _hooks is None:
-    with _making:
-      if _hooks is None:
-        _hooks = _guard()
-  return _hooks
+  with _making:
+    if _hooks is None:
+      _hooks = _guard()
+    return _hooks
 
 
 def _guard():
@@ -217,10 +217,9 @@ def _hook(name: str):
 
 # the hooks by the names the hook lines call, each this process's hooks() at
 # the call: jetlink.openpilot.hooks says what each does and answers
-HOOK_NAMES = ('should_run', 'status', 'reason', 'prepare', 'attach', 'handed_over', 'state', 'shutdown_step',
-              'model_state', 'should_extend_catalog', 'extend_catalog', 'swap_events')
-(should_run, status, reason, prepare, attach, handed_over, state, shutdown_step, model_state, should_extend_catalog,
- extend_catalog, swap_events) = map(_hook, HOOK_NAMES)
+HOOK_NAMES = (*_Off.ANSWERS, 'reason')
+(should_run, status, prepare, attach, handed_over, state, shutdown_step, model_state, should_extend_catalog,
+ extend_catalog, swap_events, reason) = map(_hook, HOOK_NAMES)
 
 
 def default_big_model(chestnut: bool, jetlink) -> str:

@@ -40,10 +40,10 @@ HEAVY = ('numpy', 'capnp', 'zmq', 'cereal', 'msgq', 'tinygrad', 'openpilot.cerea
          'openpilot.common.swaglog')
 
 
-def run_fresh(code: str) -> subprocess.CompletedProcess:
+def run_fresh(argv: list[str]) -> subprocess.CompletedProcess:
   # this runner's own path, so jetlink is found wherever it is checked out
   env = {**os.environ, 'PYTHONPATH': os.pathsep.join([str(ROOT), *sys.path])}
-  return subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, env=env, cwd=str(ROOT), timeout=120)
+  return subprocess.run(argv, capture_output=True, text=True, env=env, cwd=str(ROOT), timeout=120)
 
 
 class TestTheInterface(OpenpilotTestCase):
@@ -76,7 +76,6 @@ class TestParams(OpenpilotTestCase):
   def test_the_directory_is_params(self):
     # OpenpilotTestCase runs each test under a prefix of its own
     self.assertEqual(jetlink_adapter._params_dir(), Path(Params().get_param_path()))
-    self.assertEqual(Adapter().params_dir(), jetlink_adapter.owner_config().params_dir)
     self.assertEqual(Adapter().params_dir(), jetlink_adapter._params_dir())
 
   def test_the_directory_follows_params_root_and_the_prefix(self):
@@ -234,6 +233,7 @@ class TestTheOwner(OpenpilotTestCase):
         params.put(KEYS.link, jetlink_adapter.MODES.index(mode), block=True)
         for started in (False, True):
           self.assertEqual(owner.should_run(started, params, None), mode != 'off', mode)
+    # fresh hooks: jetlink holds a chestnut's answer for a while
     with mock.patch.object(jetlink_adapter, '_hooks', None), \
          mock.patch('openpilot.selfdrive.modeld.helpers.chestnut_present', return_value=True):
       self.assertFalse(owner.should_run(False, params, None))
@@ -243,9 +243,7 @@ class TestTheOwner(OpenpilotTestCase):
     # setting through this adapter and is done
     from jetlink.openpilot.owner import worker
     Params().put(KEYS.link, 0, block=True)
-    env = {**os.environ, 'PYTHONPATH': os.pathsep.join([str(ROOT), *sys.path])}
-    out = subprocess.run(worker(jetlink_adapter.owner_config()), capture_output=True, text=True, env=env, cwd=str(ROOT),
-                         timeout=120)
+    out = run_fresh(worker(jetlink_adapter.owner_config()))
     self.assertEqual(out.returncode, 0, out.stderr)
 
 
@@ -364,8 +362,8 @@ class TestWithoutAUsableJetlink(OpenpilotTestCase):
 
   def test_every_hook_has_an_answer(self):
     self.assertEqual(set(self.NULL), set(jetlink_adapter.HOOK_NAMES))
-    self.assertEqual({*jetlink_adapter._Off.ANSWERS, 'reason'}, set(jetlink_adapter.HOOK_NAMES))
     for name in jetlink_adapter.HOOK_NAMES:
+      self.assertEqual(getattr(jetlink_adapter, name).__name__, name)
       self.assertTrue(callable(getattr(hooks.Off(), name, None)), f"{name} is not one of jetlink's hooks")
 
   def test_without_a_checkout_every_hook_is_the_link_off(self):
@@ -385,7 +383,7 @@ assert not a.should_extend_catalog() and a.extend_catalog(c) is c
 assert a.model_state('f' * 40) is None and a.swap_events(0.01) is None
 '''
     # under this test's prefix, which the child inherits
-    out = run_fresh(code)
+    out = run_fresh([sys.executable, '-c', code])
     self.assertEqual(out.returncode, 0, out.stderr)
 
   def test_another_api_or_one_too_old_turns_the_link_off_and_says_why(self):

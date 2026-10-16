@@ -66,7 +66,7 @@ class JoiningContract:
       self.assertTrue(isinstance(prop, property) and prop.fset is not None,
                       f"{self.PATH.name} writes model.{name}, which JoiningModelState keeps to itself")
 
-    small = SimpleNamespace(**dict.fromkeys(loads | stores, 0.0))
+    small = SimpleNamespace(**dict.fromkeys(loads, 0.0))
     stop = threading.Event()
 
     def connect(should_stop=None):
