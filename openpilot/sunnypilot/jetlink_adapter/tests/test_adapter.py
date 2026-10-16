@@ -14,14 +14,13 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 import jetlink.openpilot as jl
 from jetlink.openpilot import hooks
 from jetlink.openpilot.interface import OwnerConfig, load_adapter
 from jetlink.openpilot.settings import FileParams, Settings
-from jetlink.openpilot.testing import check_adapter
+from jetlink.openpilot.testing import check_adapter, check_fallback
 
 from openpilot.cereal import messaging
 from openpilot.common.basedir import BASEDIR
@@ -338,33 +337,13 @@ class TestWithoutAUsableJetlink(OpenpilotTestCase):
   of another API. A jetlink that binds and then fails is jetlink's to answer
   for (its tests/openpilot/test_hooks.py)."""
 
-  def answers(self) -> dict:
-    catalog = {'bundles': []}
-    return {
-      'should_run': jetlink_adapter.should_run(False, None, None),
-      'status': jetlink_adapter.status(),
-      'reason': jetlink_adapter.reason(),
-      'prepare': jetlink_adapter.prepare(False),
-      'attach': jetlink_adapter.attach('model', object(), 1, 1),
-      'handed_over': jetlink_adapter.handed_over(SimpleNamespace(handovers=1)),
-      'state': jetlink_adapter.state(SimpleNamespace(big_model_state='ready')),
-      'shutdown_step': (jetlink_adapter.shutdown_step(False, 'test'), jetlink_adapter.shutdown_step(True, 'test')),
-      'model_state': jetlink_adapter.model_state('f' * 40),
-      'should_extend_catalog': jetlink_adapter.should_extend_catalog(),
-      'extend_catalog': jetlink_adapter.extend_catalog(catalog) is catalog,
-      'swap_events': jetlink_adapter.swap_events(0.01),
-    }
-
-  # a power-off that is wanted goes ahead: no jetlink must keep a comma on
-  NULL = {'should_run': False, 'status': None, 'reason': None, 'prepare': False, 'attach': 'model', 'handed_over': False,
-          'state': 'none', 'shutdown_step': (False, True), 'model_state': None, 'should_extend_catalog': False,
-          'extend_catalog': True, 'swap_events': None}
-
-  def test_every_hook_has_an_answer(self):
-    self.assertEqual(set(self.NULL), set(jetlink_adapter.HOOK_NAMES))
+  def test_every_hook_answers_as_the_link_off(self):
     for name in jetlink_adapter.HOOK_NAMES:
       self.assertEqual(getattr(jetlink_adapter, name).__name__, name)
-      self.assertTrue(callable(getattr(hooks.Off(), name, None)), f"{name} is not one of jetlink's hooks")
+    for link in (0, 1):
+      Params().put(KEYS.link, link, block=True)
+      self.assertEqual(check_fallback(jetlink_adapter._Off('why'), jetlink_adapter.HOOK_NAMES,
+                                      link_on=jetlink_adapter._link_on), [])
 
   def test_without_a_checkout_every_hook_is_the_link_off(self):
     # an empty jetlink_repo: manager, the UI, hardwared and modeld must not care
@@ -398,7 +377,9 @@ assert a.model_state('f' * 40) is None and a.swap_events(0.01) is None
         params.put(KEYS.link, 1, block=True)
         # the setting is read as a file: nothing here builds a Params
         with mock.patch('openpilot.common.params.Params', side_effect=AssertionError('a Params was built')):
-          self.assertEqual(self.answers(), {**self.NULL, 'reason': why})
+          # every hook is the fork's _Off, which the check above holds to the link off
+          self.assertIsInstance(jetlink_adapter.hooks(), jetlink_adapter._Off)
+          self.assertEqual(jetlink_adapter.reason(), why)
         # nobody who left the link off is told
         params.put(KEYS.link, 0, block=True)
         self.assertIsNone(jetlink_adapter.reason())
