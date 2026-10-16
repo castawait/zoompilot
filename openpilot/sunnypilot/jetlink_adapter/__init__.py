@@ -97,7 +97,8 @@ def _adapter_class():
 
     def chestnut_present(self) -> bool:
       # modeld's own test, the one it runs the big model on: a chestnut whose
-      # firmware names itself
+      # firmware names itself. The owner's port walk is wider (CHESTNUT_IDS,
+      # running or in its ROM), so it never holds a chestnut as a host
       from openpilot.selfdrive.modeld.helpers import chestnut_present
       return chestnut_present()
 
