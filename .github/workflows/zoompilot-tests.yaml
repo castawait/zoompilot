@@ -62,6 +62,8 @@ jobs:
         run: scons -j"$(nproc)"
       - name: jetlink suites
         # one pytest process per suite: several in one process crash at teardown
+        env:
+          RAYLIB_BACKEND: headless
         run: |
           failed=0
           for suite in \
@@ -72,17 +74,7 @@ jobs:
               openpilot/sunnypilot/system/manager/tests/test_processes.py \
               openpilot/sunnypilot/sunnylink/athena/tests/test_sunnylinkd.py \
               openpilot/sunnypilot/models/tests/test_manager_download.py \
-              openpilot/sunnypilot/mads/tests/test_mads_state_machine.py; do
-            uv run --with pytest pytest -q -p no:cacheprovider "$suite" || failed=1
-          done
-          exit "$failed"
-      - name: jetlink UI suites
-        if: ${{ !cancelled() }}
-        env:
-          RAYLIB_BACKEND: headless
-        run: |
-          failed=0
-          for suite in \
+              openpilot/sunnypilot/mads/tests/test_mads_state_machine.py \
               openpilot/selfdrive/ui/sunnypilot/tests/test_accelerator_ui.py \
               openpilot/selfdrive/ui/sunnypilot/tests/test_model_info.py \
               openpilot/selfdrive/ui/sunnypilot/mici/tests/test_mici_settings.py; do
