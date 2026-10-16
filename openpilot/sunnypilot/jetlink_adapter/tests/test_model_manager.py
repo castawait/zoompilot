@@ -57,7 +57,7 @@ class JetlinkTest(OpenpilotTestCase):
   def setUp(self):
     super().setUp()
     # a binding of its own, so no cache of another test's params answers here
-    p = mock.patch.object(jetlink_adapter, '_bound', None)
+    p = mock.patch.object(jetlink_adapter, '_hooks', None)
     p.start()
     self.addCleanup(p.stop)
 
@@ -109,7 +109,7 @@ class TestExtendsCatalog(JetlinkTest):
   def extends(self, fitted: bool, link: str) -> bool:
     Params().put(KEYS.link, MODES.index(link), block=True)
     a, b = chestnut(fitted)
-    with a, b, mock.patch.object(jetlink_adapter, '_bound', None):
+    with a, b, mock.patch.object(jetlink_adapter, '_hooks', None):
       return jetlink_adapter.should_extend_catalog()
 
   def test_without_a_chestnut_it_is_extended_whatever_the_setting(self):
@@ -244,7 +244,7 @@ class RefreshTest(JetlinkTest):
   def new_process(self) -> None:
     """The manager runs offroad only, so each parked period is a fresh process."""
     model_helpers._LAST_VALIDATED_RAW.clear()
-    jetlink_adapter._bound = None
+    jetlink_adapter._hooks = None
     with mock.patch.object(manager_module.messaging, 'PubMaster'), mock.patch.object(manager_module.messaging, 'SubMaster'):
       self.manager = manager_module.ModelManagerSP()
     self.manager.sm.__getitem__.return_value.chestnutPresent = self.CHESTNUT
@@ -258,7 +258,7 @@ class RefreshTest(JetlinkTest):
     # the loop swallows what the tick raised, and says so
     self.assertFalse([c for c in logged.call_args_list if str(c.args[0]).startswith("Error in main thread")])
     # what jetlink keeps of the catalog and the pick lasts two seconds
-    jetlink_adapter._bound = None
+    jetlink_adapter._hooks = None
 
   def refresh(self) -> None:
     """What the panels' button does (model_info.refresh_model_list), then the manager's next tick."""
@@ -277,7 +277,8 @@ class RefreshTest(JetlinkTest):
 
   def marks(self) -> dict:
     """What the owner stats to decide a provisioning run is due."""
-    return Settings(FileParams(jetlink_adapter.owner_config().params_dir), jetlink_adapter.Adapter().keys).marks()
+    config = jetlink_adapter.owner_config()
+    return Settings(FileParams(config.params_dir), config.keys).marks()
 
 
 class TestRefreshOnAJetlinkDevice(RefreshTest):
