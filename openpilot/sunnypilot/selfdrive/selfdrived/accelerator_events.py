@@ -53,7 +53,7 @@ class AcceleratorEvents:
     # modelV2's own liveness: a late modelDataV2SP is no hand-back. A chestnut
     # dropping modelV2.big is the native bigModelFailed; its state is none
     big = sm.alive['modelV2'] and sm.valid['modelV2'] and sm['modelV2'].big
-    flags = self.swap.update(fresh, str(sm['modelDataV2SP'].zoompilot.acceleratorState), big, in_control)
+    flags = self.swap.update(fresh, big, in_control, state=str(sm['modelDataV2SP'].zoompilot.acceleratorState))
     if flags.offer:
       events_sp.zp.add(EventNameZP.bigModelAvailable)
     if flags.link_lost:
