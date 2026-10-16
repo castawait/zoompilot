@@ -208,7 +208,7 @@ class _Off:
   ANSWERS = {'should_run': False, 'status': None, 'prepare': False, 'attach': lambda model, *_: model,
              'handed_over': False, 'state': 'none', 'shutdown_step': lambda wanted, reason='': wanted,
              'model_state': None, 'should_extend_catalog': False, 'extend_catalog': lambda catalog: catalog,
-             'swap_events': None, 'request_shutdown': False, 'shutdown_pending': False}
+             'swap_events': None}
 
   def __init__(self, why: str = ''):
     self.why = why
@@ -233,9 +233,9 @@ def _hook(name: str):
 # the hooks by the names the hook lines call, each this process's hooks() at
 # the call: jetlink.openpilot.hooks says what each does and answers
 HOOK_NAMES = ('should_run', 'status', 'reason', 'prepare', 'attach', 'handed_over', 'state', 'shutdown_step',
-              'model_state', 'should_extend_catalog', 'extend_catalog', 'swap_events', 'request_shutdown', 'shutdown_pending')
+              'model_state', 'should_extend_catalog', 'extend_catalog', 'swap_events')
 (should_run, status, reason, prepare, attach, handed_over, state, shutdown_step, model_state, should_extend_catalog,
- extend_catalog, swap_events, request_shutdown, shutdown_pending) = map(_hook, HOOK_NAMES)
+ extend_catalog, swap_events) = map(_hook, HOOK_NAMES)
 
 
 def default_big_model(chestnut: bool, jetlink) -> str:

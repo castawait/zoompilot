@@ -351,8 +351,6 @@ class TestWithoutAUsableJetlink(OpenpilotTestCase):
       'handed_over': jetlink_adapter.handed_over(SimpleNamespace(handovers=1)),
       'state': jetlink_adapter.state(SimpleNamespace(big_model_state='ready')),
       'shutdown_step': (jetlink_adapter.shutdown_step(False, 'test'), jetlink_adapter.shutdown_step(True, 'test')),
-      'request_shutdown': jetlink_adapter.request_shutdown('test'),
-      'shutdown_pending': jetlink_adapter.shutdown_pending(),
       'model_state': jetlink_adapter.model_state('f' * 40),
       'should_extend_catalog': jetlink_adapter.should_extend_catalog(),
       'extend_catalog': jetlink_adapter.extend_catalog(catalog) is catalog,
@@ -361,8 +359,8 @@ class TestWithoutAUsableJetlink(OpenpilotTestCase):
 
   # a power-off that is wanted goes ahead: no jetlink must keep a comma on
   NULL = {'should_run': False, 'status': None, 'reason': None, 'prepare': False, 'attach': 'model', 'handed_over': False,
-          'state': 'none', 'shutdown_step': (False, True), 'request_shutdown': False, 'shutdown_pending': False,
-          'model_state': None, 'should_extend_catalog': False, 'extend_catalog': True, 'swap_events': None}
+          'state': 'none', 'shutdown_step': (False, True), 'model_state': None, 'should_extend_catalog': False,
+          'extend_catalog': True, 'swap_events': None}
 
   def test_every_hook_has_an_answer(self):
     self.assertEqual(set(self.NULL), set(jetlink_adapter.HOOK_NAMES))
