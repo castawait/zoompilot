@@ -165,7 +165,8 @@ class TestSwitching(AcceleratorEventsTest):
     self.assertIn(ET.NO_ENTRY, EVENTS[EventName.bigModelLoading])
 
   def test_the_chime_waits_for_the_end_of_the_second(self):
-    # selfdrived's native block raises it on the swap; it now says "engage now"
+    # selfdrived's native block raises it on the swap; it is held until the
+    # second ends, when it means "engage now"
     self.step(state='ready')
     heard = []
     for tick in range(SWITCHING_TICKS + 10):
@@ -204,8 +205,8 @@ class TestSwitching(AcceleratorEventsTest):
     return engaged
 
   def test_one_press_inside_the_second_is_not_lost(self):
-    # 2026-09-29: main went on 0.27 s after a swap. MADS's enable is the main-on
-    # edge; refused, it would have left MADS off with main on
+    # main goes on 0.27 s after a swap. MADS's enable is the main-on edge;
+    # refused, it would leave MADS off with main on
     engaged = self.drive_presses(press_at=27)
     self.assertEqual(engaged[27][:2], (False, False))
     self.assertEqual(engaged[27][2], MadsState.paused)

@@ -32,7 +32,7 @@ SWITCHING_TICKS = round(1. / DT_CTRL)
 class AcceleratorEvents:
   # An accelerator is optional: its daemon exiting costs the big model, never
   # engagement. manager does not restart a process that died, so without this
-  # a dead link owner was processNotRunning, NO_ENTRY until a reboot
+  # a dead link owner would be processNotRunning, NO_ENTRY until a reboot
   OPTIONAL_PROCESSES = frozenset({jetlink_adapter.OWNER})
 
   def __init__(self):
