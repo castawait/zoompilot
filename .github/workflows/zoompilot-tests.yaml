@@ -62,7 +62,8 @@ jobs:
         # params, msgq and the cython modules the suites import
         run: scons -j"$(nproc)"
       - name: jetlink suites
-        # one pytest process per suite: several in one process crash at teardown
+        # one pytest process per suite: several in one process crash at teardown. The mici
+        # settings suite runs locally only: headless pyray has no raygui enums
         env:
           RAYLIB_BACKEND: headless
         run: |
@@ -77,8 +78,7 @@ jobs:
               openpilot/sunnypilot/models/tests/test_manager_download.py \
               openpilot/sunnypilot/mads/tests/test_mads_state_machine.py \
               openpilot/selfdrive/ui/sunnypilot/tests/test_accelerator_ui.py \
-              openpilot/selfdrive/ui/sunnypilot/tests/test_model_info.py \
-              openpilot/selfdrive/ui/sunnypilot/mici/tests/test_mici_settings.py; do
+              openpilot/selfdrive/ui/sunnypilot/tests/test_model_info.py; do
             uv run --with pytest pytest -q -p no:cacheprovider "$suite" || failed=1
           done
           exit "$failed"
