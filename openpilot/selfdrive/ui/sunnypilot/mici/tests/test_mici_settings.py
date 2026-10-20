@@ -623,6 +623,20 @@ class TestLayoutsSurviveRender:
 
     render(MiciHomeLayoutSP())
 
+  def test_home_knows_the_port_jetlink_holds(self, params, monkeypatch):
+    # a Jetson enumerates as nothing comma knows; with the link holding the port it is not unknown
+    from types import SimpleNamespace
+    from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP
+    from openpilot.selfdrive.ui.ui_state import ui_state
+
+    monkeypatch.setattr(ui_state, "usb_connected", True)
+    monkeypatch.setattr(ui_state, "usb_unknown", True)
+    home = MiciHomeLayoutSP()
+    for jetlink, shown in ((None, True), (SimpleNamespace(holds_port=False), True), (SimpleNamespace(holds_port=True), False)):
+      monkeypatch.setattr(ui_state, "jetlink", jetlink)
+      home._set_chestnut_visibility()
+      assert home._usb_icon.is_visible == shown
+
 
 class TestRowDescriptions:
   """A long press opens a row's description; a row without one only shakes."""

@@ -237,7 +237,8 @@ class ModelState(ModelStateBase):
 def main(demo=False):
   cloudlog.warning("modeld init")
 
-  CHESTNUT = chestnut_compiled() and (chestnut_present() or cable_connected())
+  # a Jetson or an iPhone on the port is a cable too: counted only while Jetlink is off (jetlink docs/porting.md)
+  CHESTNUT = chestnut_compiled() and (chestnut_present() or (cable_connected() and not jetlink_adapter.link_on()))
   if CHESTNUT:
     from tinygrad.runtime.ops_amd import AMDDevice
     AMDDevice.wait_timeout_ms = 3000

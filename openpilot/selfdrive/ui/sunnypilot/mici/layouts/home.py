@@ -52,7 +52,9 @@ class MiciHomeLayoutSP(MiciHomeLayout):
     # dim rather than the solid green of a model that is driving
     waiting = chestnut_state == ChestnutState.WAITING
 
-    self._usb_icon.set_visible(usb_connected and usb_unknown)
+    # the port is known while Jetlink holds it, whatever enumerated
+    holds_port = ui_state.jetlink is not None and ui_state.jetlink.holds_port
+    self._usb_icon.set_visible(usb_connected and usb_unknown and not holds_port)
     self._chestnut_loading_icon.set_opacity(0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0)))
     self._chestnut_loading_icon.set_visible(not usb_unknown and loading)
     self._chestnut_icon.set_opacity(0.5 if waiting else 1.0)

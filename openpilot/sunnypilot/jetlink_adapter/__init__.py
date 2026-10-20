@@ -66,7 +66,7 @@ def _params_dir() -> Path:
   return Path(root) / os.environ.get('OPENPILOT_PREFIX', 'd')
 
 
-def _link_on() -> bool:
+def link_on() -> bool:
   """Is the Jetlink setting on? As jetlink reads it, a file, so that a jetlink
   this build cannot use tells only someone who turned the link on."""
   try:
@@ -86,9 +86,6 @@ def _adapter_class():
     KEYS = Keys(**KEYS._asdict())
     # MADS's state rides on carControlSP
     IN_CONTROL_SERVICES = ('carState', 'carControl', 'carControlSP')
-    # modeld_tinygrad's warp, which every checkout carries (LFS); stock modeld
-    # loads the same compile from its own models dir, which only scons fills
-    WARP_DIR = 'openpilot/sunnypilot/modeld_v2/models'
 
     @property
     def catalog_selector(self) -> int:
@@ -166,7 +163,7 @@ def _guard():
   except Exception as e:
     return _unusable(f"jetlink failed to load: {type(e).__name__}: {e}", e)
   try:
-    return Hooks(API, adapter, link_on=_link_on, log=_cloudlog)
+    return Hooks(API, adapter, link_on=link_on, log=_cloudlog)
   except Exception as e:
     return _unusable(str(e), e)   # another API, which it names
 
@@ -200,7 +197,7 @@ class _Off:
     self.why = why
 
   def reason(self) -> str | None:
-    return self.why if self.why and _link_on() else None
+    return self.why if self.why and link_on() else None
 
   def __getattr__(self, name: str):
     if name not in self.ANSWERS:

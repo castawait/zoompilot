@@ -267,7 +267,9 @@ def main(demo=False):
   cloudlog.bind(daemon=PROCESS_NAME)
   setproctitle(PROCESS_NAME)
 
-  CHESTNUT = _find_driving_pkl(get_active_bundle(chestnut=True)) is not None and (chestnut_present() or cable_connected())
+  # a Jetson or an iPhone on the port is a cable too: counted only while Jetlink is off (jetlink docs/porting.md)
+  CHESTNUT = _find_driving_pkl(get_active_bundle(chestnut=True)) is not None and \
+    (chestnut_present() or (cable_connected() and not jetlink_adapter.link_on()))
   jetlink_adapter.prepare(CHESTNUT)  # before going realtime
   if CHESTNUT:
     from tinygrad.runtime.ops_amd import AMDDevice
