@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 The planner's e2e candidate follows zoompilot's experimental/chill switch (selfdrived_zp), which
 upstream retired. Also the fixture the planner hook tests build on.
 """
+import pytest
+
 from openpilot.cereal import custom, messaging
 from opendbc.car import structs
 from opendbc.car.interfaces import ACCEL_MAX
@@ -32,7 +34,7 @@ class MockSubMaster(dict):
 
 def build_sm(experimental_mode: bool) -> MockSubMaster:
   services = {}
-  for service in ("radarState", "vehicleParameters", "carStateSP", "liveMapDataSP", "gpsLocationExternal", "gpsLocation"):
+  for service in ("radarState", "carStateSP", "liveMapDataSP", "gpsLocationExternal", "gpsLocation"):
     services[service] = getattr(messaging.new_message(service), service)
 
   # engaged on openpilot long: longcontrol running, so the planner does not reset
@@ -102,3 +104,16 @@ class TestExperimentalGate(OpenpilotTestCase):
     assert planner.update_e2e_target(sm, E2E_ACCEL, True, False) == (ACCEL_MAX, False)
     planner.update(sm)
     assert not planner.output_should_stop
+
+  def test_cornering_estimate_is_controlsds_curvature(self):
+    # plannerd no longer subscribes to vehicleParameters: the lifts read controlsState's curvature
+    planner = build_planner()
+    sm = build_sm(True)
+    controls_state = sm['controlsState'].as_builder()
+    controls_state.curvature = 0.002
+    sm['controlsState'] = controls_state.as_reader()
+    seen = []
+    update = planner.e2e_set_speed.update
+    planner.e2e_set_speed.update = lambda *args: seen.append(args[-1]) or update(*args)
+    planner.update(sm)
+    assert seen == [pytest.approx(0.002 * V_EGO ** 2)]

@@ -160,10 +160,9 @@ class LongitudinalPlannerSP:
     """The e2e candidate the host planner takes the minimum over. In chill it can never be the
     minimum (cruise, listed first, wins a tie) and never asks to stop."""
     is_e2e = self.is_e2e(sm)
-    # lateral acceleration from the measured steering, as the host's cruise candidate computes it
-    CS = sm['carState']
-    steer_deg = CS.steeringAngleDeg - sm['vehicleParameters'].angleOffsetDeg
-    steer_lat_accel = CS.vEgo ** 2 * math.radians(steer_deg) / (self.CP.steerRatio * self.CP.wheelbase)
+    # lateral acceleration from the measured steering: controlsd's curvature from the learned steer
+    # ratio, angle offset and roll (both consumers take its magnitude)
+    steer_lat_accel = sm['controlsState'].curvature * sm['carState'].vEgo ** 2
     # output_v_target is this frame's cruise target after SCC and SLA
     a_e2e = self.e2e_set_speed.update(sm, a_model, self.output_v_target, is_e2e, reset_state,
                                       self.allow_throttle, self.fcw, self.accel_coast, steer_lat_accel)
