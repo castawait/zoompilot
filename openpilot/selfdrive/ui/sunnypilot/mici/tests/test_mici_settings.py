@@ -1116,3 +1116,20 @@ class TestOverriddenToggles:
     layout._tq_manual_rt.set_checked(False)
     for item in (layout._tq_self_tune, layout._tq_relaxed):
       assert item.enabled and not item.superseded
+
+
+class TestOnroadOverlays:
+  def test_left_blind_spot_hides_the_long_indicator(self, params, monkeypatch):
+    # both sit at the top left; the right blind spot leaves it alone
+    from openpilot.selfdrive.ui.sunnypilot.onroad.blind_spot_indicators import BlindSpotIndicators
+    from openpilot.selfdrive.ui.ui_state import ui_state
+
+    monkeypatch.setattr(ui_state, "blindspot", True)
+    bsm = BlindSpotIndicators()
+    assert not bsm.left_detected
+    bsm._blind_spot_right_alpha_filter.x = 1.
+    assert bsm.detected and not bsm.left_detected
+    bsm._blind_spot_left_alpha_filter.x = 1.
+    assert bsm.left_detected
+    monkeypatch.setattr(ui_state, "blindspot", False)
+    assert not bsm.left_detected
