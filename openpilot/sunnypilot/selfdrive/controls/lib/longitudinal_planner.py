@@ -79,7 +79,8 @@ class LongitudinalPlannerSP:
     self.accel_coast = ACCEL_MAX
 
   def is_e2e(self, sm: messaging.SubMaster) -> bool:
-    return bool(self.CP.openpilotLongitudinalControl)
+    # zoompilot keeps chill (selfdrived_zp): the model's candidate only in experimental mode
+    return bool(self.CP.openpilotLongitudinalControl and sm['selfdriveStateSP'].zoompilot.experimentalMode)
 
   def _sla_owner(self, icbm: bool):
     # the machine exists only on pcm openpilot-long cars, where it owns SLA while ICBM is passive
@@ -140,7 +141,10 @@ class LongitudinalPlannerSP:
     self.output_v_target, self.output_a_target = v_target, a_target
     return self.output_v_target, self.output_a_target
 
-  def update_e2e_target(self, sm: messaging.SubMaster, a_model: float, reset_state: bool) -> float:
+  def update_e2e_target(self, sm: messaging.SubMaster, a_model: float, should_stop_model: bool,
+                        reset_state: bool) -> tuple[float, bool]:
+    """The e2e candidate the host planner takes the minimum over. In chill it can never be the
+    minimum (cruise, listed first, wins a tie) and never asks to stop."""
     is_e2e = self.is_e2e(sm)
     # lateral acceleration from the measured steering, as the host's cruise candidate computes it
     CS = sm['carState']
@@ -155,7 +159,9 @@ class LongitudinalPlannerSP:
     # a_cruise is last frame's: the host builds this frame's after the e2e candidate
     self.a_e2e = self.e2e_lead_gap.update(sm, a_e2e, float(a_mpc), is_e2e, reset_state, self.allow_throttle,
                                           self.fcw, self.a_cruise, steer_lat_accel)
-    return self.a_e2e
+    if not is_e2e:
+      return ACCEL_MAX, False
+    return self.a_e2e, should_stop_model
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.events_sp.clear()
