@@ -626,6 +626,18 @@ class TestLayoutsSurviveRender:
 
     render(MiciHomeLayoutSP())
 
+  def test_home_shows_experimental_mode_after_network(self, params, monkeypatch):
+    from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP
+    from openpilot.selfdrive.ui.ui_state import ui_state
+
+    home = MiciHomeLayoutSP()
+    assert home._status_bar_layout.widgets[2] is home._experimental_icon
+    for has_long, experimental, shown in ((True, True, True), (True, False, False), (False, True, False)):
+      monkeypatch.setattr(ui_state, "has_longitudinal_control", has_long)
+      monkeypatch.setattr(ui_state, "experimental_mode", experimental)
+      assert home._experimental_icon.is_visible == shown
+    render(home)
+
   def test_home_knows_the_port_jetlink_holds(self, params, monkeypatch):
     # a Jetson enumerates as nothing comma knows; with the link holding the port it is not unknown
     from types import SimpleNamespace

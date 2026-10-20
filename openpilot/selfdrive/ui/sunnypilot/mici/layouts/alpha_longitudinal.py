@@ -9,6 +9,7 @@ control. Developer drops its copy of the alpha switch (DeveloperLayoutMiciSP) so
 """
 from openpilot.selfdrive.ui.mici.layouts.settings.developer import AlphaLongConfirmPage
 from openpilot.selfdrive.ui.mici.widgets.button import BigToggle
+from openpilot.selfdrive.ui.sunnypilot.longitudinal_mode import EXPERIMENTAL_ICON
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.button import BigParamControlSP
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
@@ -25,7 +26,7 @@ class AlphaLongitudinalLayoutMici(NavScroller):
                                                        "This may turn off Automatic Emergency Braking (AEB)."))
     # upstream's row from before it retired chill mode (TogglesLayoutMici), text and icon
     self._experimental_toggle = BigToggle(tr("experimental mode"), toggle_callback=self._on_experimental_mode,
-                                          description_icon=gui_app.texture("icons_mici/experimental_mode.png", 64, 64),
+                                          description_icon=gui_app.texture(EXPERIMENTAL_ICON, 64, 64),
                                           description=tr("Let the driving model control gas and brakes.\n" +
                                                          "Includes stopping for red lights and stop signs.\n" +
                                                          "Set speed is a maximum, not a target.\n" +

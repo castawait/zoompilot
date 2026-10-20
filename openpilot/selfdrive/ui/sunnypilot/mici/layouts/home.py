@@ -10,8 +10,10 @@ import time
 import pyray as rl
 
 from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
+from openpilot.selfdrive.ui.sunnypilot.longitudinal_mode import EXPERIMENTAL_ICON
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.system.ui.lib.application import FontWeight, MousePos
+from openpilot.system.ui.widgets.icon_widget import IconWidget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
 
@@ -22,6 +24,11 @@ class MiciHomeLayoutSP(MiciHomeLayout):
     self._mouse_down_t: float | None = None
     self._did_long_press = False
     self._is_pressed_prev = False
+    # upstream's status bar icon, after the network icon, retired with chill mode
+    self._experimental_icon = IconWidget(EXPERIMENTAL_ICON, (48, 48))
+    self._experimental_icon.set_visible(lambda: ui_state.has_longitudinal_control and ui_state.experimental_mode)
+    self._status_bar_layout.add_widget(self._experimental_icon)
+    self._status_bar_layout.widgets.insert(2, self._status_bar_layout.widgets.pop())
 
   def _update_state(self):
     # zoompilot keeps upstream's retired long press: hold 0.5 s to switch experimental mode
