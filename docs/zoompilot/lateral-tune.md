@@ -158,9 +158,9 @@ friction 0.25, 0.3 s delay). The tests that pinned these alternatives were dropp
 ### Steer-limit classifier (`steer_limit.py`)
 
 controlsd sets `steer_limited_by_safety` when |CC.actuators.torque - carOutput.torque| >
-0.01. One carcontroller slew step is 12/1200 = 0.010 of scale on the CX-5 (0.015 on the
-800-count scale the logged drive still ran above 32 mph), so any command walking faster than
-the rate limit reads as limited: 51% of active frames on a logged v2 drive, and the bidirectional freeze blocked integrator
+0.01. One carcontroller slew step was 12/1200 = 0.010 of scale on the CX-5 (0.015 on the
+800-count scale the logged drive still ran above 32 mph; 10/1200 = 0.0083 since 2026-10-20), so any
+command walking faster than the rate limit reads as limited: 51% of active frames on a logged v2 drive, and the bidirectional freeze blocked integrator
 decay toward a reversing error on about 13% of frames. That standing bias is where v0's
 |i| p50 of 0.275 came from (v2 0.016). An EPS pinned at its ceiling also never raised the
 saturation alert, because the ceiling clamp itself kept the flag high.
