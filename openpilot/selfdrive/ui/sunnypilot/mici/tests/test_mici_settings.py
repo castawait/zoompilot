@@ -12,6 +12,8 @@ import os
 import pytest
 from unittest import mock
 
+from opendbc.car.mazda.values import MazdaFlags
+
 os.environ["BIG"] = "0"
 os.environ.setdefault("SCALE", "1")
 
@@ -359,8 +361,9 @@ class TestJerkAwareToggle:
     from openpilot.selfdrive.ui.ui_state import ui_state
 
     class _CP:
+      brand = "mazda"
+      flags = 0
       steerControlType = car.CarParams.SteerControlType.torque
-      enableBsm = False
 
     old_cp = ui_state.CP
     ui_state.CP = _CP()
@@ -406,7 +409,7 @@ class TestMadsLimitedCallSignature:
     class _CP:
       brand = "mazda"
       steerControlType = car.CarParams.SteerControlType.torque
-      enableBsm = True
+      flags = MazdaFlags.HAS_BSM
 
     class _CPSP:
       flags = 0
@@ -1040,7 +1043,7 @@ class TestOverriddenToggles:
     from openpilot.selfdrive.ui.sunnypilot.mici.layouts.visuals import VisualsLayoutMici
     from openpilot.selfdrive.ui.ui_state import ui_state
 
-    monkeypatch.setattr(ui_state, "CP", car.CarParams.new_message(enableBsm=bsm))
+    monkeypatch.setattr(ui_state, "CP", car.CarParams.new_message(brand="mazda", flags=int(MazdaFlags.HAS_BSM) if bsm else 0))
     toggle = VisualsLayoutMici()._toggles["BlindSpot"]
     assert toggle.enabled == bsm
     assert toggle.superseded == (not bsm)
