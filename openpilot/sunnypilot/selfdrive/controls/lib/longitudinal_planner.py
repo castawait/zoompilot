@@ -16,6 +16,7 @@ from openpilot.common.constants import CV
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_accel_from_plan
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_lead_gap.controller import E2ELeadGapController
@@ -44,6 +45,7 @@ def get_coast_accel(pitch):
 class LongitudinalPlannerSP:
   # set by the host planner before the e2e candidate is built
   CP: structs.CarParams
+  accel_boost: AccelBoost
   fcw: bool
   a_cruise: float
   v_desired_trajectory: np.ndarray
@@ -153,6 +155,11 @@ class LongitudinalPlannerSP:
     # output_v_target is this frame's cruise target after SCC and SLA
     a_e2e = self.e2e_set_speed.update(sm, a_model, self.output_v_target, is_e2e, reset_state,
                                       self.allow_throttle, self.fcw, self.accel_coast, steer_lat_accel)
+    # upstream's gas boost learns past the model from gas presses; the set-speed floor already lifts
+    # it, so the boost only runs with the floor off
+    if self.e2e_set_speed.enabled:
+      self.accel_boost.total_boost = 0.
+      self.accel_boost.boost_eligible = False
     # the MPC candidate as the host planner takes it from this frame's solution
     a_mpc = get_accel_from_plan(self.v_desired_trajectory, self.a_desired_trajectory, CONTROL_N_T_IDX,
                                 action_t=self.CP.longitudinalActuatorDelay + DT_MDL)
