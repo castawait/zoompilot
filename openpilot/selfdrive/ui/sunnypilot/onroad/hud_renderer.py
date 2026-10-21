@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import pyray as rl
 
 from openpilot.common.constants import CV
+from openpilot.selfdrive.ui import UI_BORDER_SIZE
 from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer, DeveloperUiState, get_bottom_dev_ui_offset
 from openpilot.selfdrive.ui.sunnypilot.onroad.exp_button import ExpButton
@@ -26,7 +27,6 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 SLA_ACTIVE_COLOR = rl.Color(0x91, 0x9b, 0x95, 0xff)
 
 # the experimental mode button's place, as upstream drew it before retiring chill mode
-EXP_BUTTON_BORDER = 30
 EXP_BUTTON_SIZE = 192
 EXP_BUTTON_ICON_SIZE = 144
 
@@ -139,8 +139,8 @@ class HudRendererSP(HudRenderer):
     super()._render(rect)
 
     if ui_state.has_longitudinal_control:
-      button_x = rect.x + rect.width - EXP_BUTTON_BORDER - EXP_BUTTON_SIZE
-      button_y = rect.y + EXP_BUTTON_BORDER
+      button_x = rect.x + rect.width - UI_BORDER_SIZE - EXP_BUTTON_SIZE
+      button_y = rect.y + UI_BORDER_SIZE
       self._exp_button.render(rl.Rectangle(button_x, button_y, EXP_BUTTON_SIZE, EXP_BUTTON_SIZE))
 
     if ui_state.torque_bar:

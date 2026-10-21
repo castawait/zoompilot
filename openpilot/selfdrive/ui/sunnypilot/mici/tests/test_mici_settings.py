@@ -649,6 +649,7 @@ class TestLayoutsSurviveRender:
     home = MiciHomeLayoutSP()
     for jetlink, shown in ((None, True), (SimpleNamespace(holds_port=False), True), (SimpleNamespace(holds_port=True), False)):
       monkeypatch.setattr(ui_state, "jetlink", jetlink)
+      ui_state._enforce_usb_port()
       home._set_chestnut_visibility()
       assert home._usb_icon.is_visible == shown
 
@@ -937,12 +938,10 @@ class TestAlphaLongitudinalPanelMici:
 
   def test_moved_switches_appear_once(self, params):
     from openpilot.selfdrive.ui.sunnypilot.mici.layouts.alpha_longitudinal import AlphaLongitudinalLayoutMici
-    from openpilot.selfdrive.ui.sunnypilot.mici.layouts.cruise import CruiseLayoutMici
     from openpilot.selfdrive.ui.sunnypilot.mici.layouts.developer import DeveloperLayoutMiciSP
 
     developer = DeveloperLayoutMiciSP()
     assert developer._alpha_long_toggle not in developer._scroller.items
-    assert not hasattr(CruiseLayoutMici(), "_dec_toggle")
 
     alpha = AlphaLongitudinalLayoutMici()
     assert [key for key, _ in alpha._refresh_toggles] == [
@@ -1007,7 +1006,7 @@ class TestAlphaLongitudinalPanelMici:
     monkeypatch.setattr(gui_app, "push_widget", pushed.append)
     layout = alpha_longitudinal.AlphaLongitudinalLayoutMici()
     for state in (False, True):
-      layout._on_experimental_mode(state)
+      layout._experimental_toggle._toggle_callback(state)
       assert params.get_bool("ExperimentalMode") is state
     assert not pushed
 

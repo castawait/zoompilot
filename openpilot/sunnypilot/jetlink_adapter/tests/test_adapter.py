@@ -162,10 +162,19 @@ class TestTheDevice(OpenpilotTestCase):
 
 
 class TestModeld(OpenpilotTestCase):
-  def test_every_modeld_counts_the_cable_only_with_the_link_off(self):
+  def test_the_cable_counts_only_with_the_link_off(self):
     # jetlink docs/porting.md: a Jetson on the port reads as a chestnut to cable_connected()
+    from openpilot.common.hardware import usb
+    for cable, link, counted in ((False, False, False), (True, False, True), (True, True, False)):
+      with mock.patch.object(usb, 'cable_connected', return_value=cable), \
+           mock.patch.object(jetlink_adapter, 'link_on', return_value=link):
+        self.assertEqual(jetlink_adapter.chestnut_cable(), counted)
+
+  def test_every_modeld_asks_the_adapter_about_the_cable(self):
     for path in ('openpilot/selfdrive/modeld/modeld.py', 'openpilot/sunnypilot/modeld_v2/modeld.py'):
-      self.assertIn('(cable_connected() and not jetlink_adapter.link_on())', (Path(BASEDIR) / path).read_text(), path)
+      source = (Path(BASEDIR) / path).read_text()
+      self.assertIn('jetlink_adapter.chestnut_cable()', source, path)
+      self.assertNotIn('cable_connected', source, path)
 
   def test_the_model_face_is_modelds(self):
     from openpilot.selfdrive.modeld import modeld

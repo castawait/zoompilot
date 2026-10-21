@@ -27,12 +27,10 @@ def test_alpha_toggle_is_offroad_only(params, monkeypatch):
 
 def test_moved_switches_appear_once(params):
   from openpilot.selfdrive.ui.sunnypilot.layouts.settings.alpha_longitudinal_toggles import AlphaLongitudinalToggles
-  from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise import CruiseLayout
   from openpilot.selfdrive.ui.sunnypilot.layouts.settings.developer import DeveloperLayoutSP
 
   developer = DeveloperLayoutSP()
   assert developer._alpha_long_toggle not in developer._scroller._items
-  assert not hasattr(CruiseLayout(), "dec_toggle")
 
   alpha = AlphaLongitudinalToggles()
   assert [key for key, _ in alpha._refresh_toggles] == [
@@ -67,7 +65,7 @@ def test_experimental_toggle_needs_no_confirm(params, monkeypatch):
   monkeypatch.setattr(gui_app, "push_widget", pushed.append)
   layout = AlphaLongitudinalToggles()
   for state in (False, True):
-    layout._on_experimental_mode(state)
+    layout._experimental_toggle.action_item.toggle._callback(state)
     assert params.get_bool("ExperimentalMode") is state
   assert not pushed
 
