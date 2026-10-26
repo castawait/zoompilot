@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 from openpilot.selfdrive.ui.layouts.home import HomeLayout, HomeLayoutState, HEAD_BUTTON_FONT_SIZE, SPACING
-from openpilot.selfdrive.ui.sunnypilot.active_model import active_model_name
+from openpilot.selfdrive.ui.sunnypilot.model_info import carrying_name, short_name
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -80,4 +80,4 @@ class HomeLayoutSP(HomeLayout):
       model_rect = rl.Rectangle(version_left, self.header_rect.y,
                                 model_right - version_left, self.header_rect.height)
       if model_rect.width > 0:
-        gui_label(model_rect, active_model_name(), MODEL_FONT_SIZE, MODEL_COLOR, alignment=TextAlignment.RIGHT)
+        gui_label(model_rect, short_name(carrying_name()), MODEL_FONT_SIZE, MODEL_COLOR, alignment=TextAlignment.RIGHT)

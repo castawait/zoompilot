@@ -94,7 +94,8 @@ class DisplayLayoutMici(NavScroller):
                      "Default keeps the stock timing."),
     )
 
-    self._home_model = BigParamControl(tr("model on home"), "HomeShowActiveModel")
+    self._home_model = BigParamControl(tr("model on home"), "HomeShowActiveModel",
+                                       description=tr("Shows the driving model's name at the bottom of the home screen."))
 
     self._screensaver = BigParamControl(tr("screen saver"), "ScreenSaverEnabled",
                                         description=tr("Shows a screen saver when offroad and idle, instead of a dark screen."))

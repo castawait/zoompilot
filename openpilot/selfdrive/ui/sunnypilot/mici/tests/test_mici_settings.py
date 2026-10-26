@@ -687,6 +687,31 @@ class TestLayoutsSurviveRender:
     render(MiciHomeLayoutSP())
     render(HomeLayoutSP())
 
+  def test_home_model_name_takes_the_footer_gap(self, params, monkeypatch):
+    # the name sits between the last visible icon and the alerts pill, and gives way when
+    # the icons and the pill leave too little room to read it
+    from openpilot.selfdrive.ui.sunnypilot.mici.layouts import home as home_mod
+    from openpilot.selfdrive.ui.ui_state import ui_state
+
+    monkeypatch.setattr(home_mod, "carrying_name", lambda: "Cinque Terre V3 Model (September 17, 2026)")
+    monkeypatch.setattr(ui_state, "home_show_active_model", True)
+    home = home_mod.MiciHomeLayoutSP()
+    drawn = []
+    monkeypatch.setattr(home._model_label, "render", lambda rect=None: drawn.append(rect))
+
+    render(home, 536, 240)
+    assert home._model_label.text == "cinque terre v3 model"
+    rect = drawn[-1]
+    assert rect.x + rect.width <= 536 - home_mod.HOME_PADDING
+
+    home.set_callbacks(alert_count_callback=lambda: 2)
+    for icon in (home._usb_icon, home._chestnut_failed_icon, home._mic_icon, home._body_icon):
+      monkeypatch.setattr(icon, "set_visible", lambda *_: None)
+      icon._is_visible = True
+    drawn.clear()
+    render(home, 536, 240)
+    assert not drawn, "no room left: the name is hidden, not squeezed"
+
 
 class TestRowDescriptions:
   """A long press opens a row's description; a row without one only shakes."""

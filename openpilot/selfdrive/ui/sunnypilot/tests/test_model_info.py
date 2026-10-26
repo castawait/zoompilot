@@ -71,6 +71,48 @@ class TestCarryingModel(OpenpilotTestCase):
     assert model_info.carrying_model() == ("chestnut", "big_custom", "big_custom")
 
 
+  def test_one_line_name_follows_the_carrier(self):
+    self.ui_state.chestnut_state = ChestnutState.ACTIVE
+    self.ui_state.jetlink = jetlink_status(enabled=True, mode='usb', present=True, ready=True, model="big")
+    assert model_info.carrying_name() == "big"
+
+  def test_one_line_name_of_a_custom_big_with_no_fallback_is_the_pick(self):
+    # a fitted board that is not carrying yet, with a custom big picked: carrying_model has no answer
+    self.ui_state.chestnut_present = True
+    self.ui_state.is_offroad.return_value = False
+    self.ui_state.params.get.side_effect = lambda key: {"ModelManager_ActiveBundleChestnut": _raw_bundle("big_custom")}.get(key)
+    assert model_info.carrying_model() == (None, None, None)
+    assert model_info.carrying_name() == "big_custom"
+
+
+  def test_one_line_name_follows_jetlink_fall_over_and_handback(self):
+    # onroad the mici home is a tap away, so the name has to follow the carrier both ways
+    self.ui_state.is_offroad.return_value = False
+    link = jetlink_status(enabled=True, mode='usb', present=True, ready=True, model="big")
+    self.ui_state.jetlink = link
+    for state, name in ((ChestnutState.WAITING, "custom_small"),  # small drives until the swap window
+                        (ChestnutState.ACTIVE, "big"),            # joined
+                        (ChestnutState.FAILED, "custom_small"),   # link lost: the small model drives on
+                        (ChestnutState.LOADING, "custom_small"),  # rejoining
+                        (ChestnutState.ACTIVE, "big")):           # handed back
+      self.ui_state.chestnut_state = state
+      assert model_info.carrying_name() == name, state
+
+  def test_one_line_name_of_a_failed_default_big_chestnut_is_the_default_small(self):
+    # a Default big falls back to the Default small (stock modeld), never the small slot's pick
+    self.ui_state.chestnut_present = True
+    self.ui_state.is_offroad.return_value = False
+    self.ui_state.chestnut_active = True
+    assert model_info.carrying_name() == f"{DEFAULT_BIG_MODEL} (Default)"
+    self.ui_state.chestnut_active = False
+    self.ui_state.chestnut_state = ChestnutState.FAILED
+    assert model_info.carrying_name() == f"{DEFAULT_MODEL} (Default)"
+
+def test_short_name_drops_the_date_or_default_suffix():
+  assert model_info.short_name("Cinque Terre V3 Model (September 17, 2026)") == "Cinque Terre V3 Model"
+  assert model_info.short_name(f"{DEFAULT_MODEL} (Default)") == DEFAULT_MODEL
+  assert model_info.short_name(DEFAULT_BIG_MODEL) == DEFAULT_BIG_MODEL
+
 class TestDefaultBigModelName(OpenpilotTestCase):
   """An empty big slot runs the chestnut's in-tree model when a board is fitted,
   and the accelerator's default when none is: jetlink's, named from its catalog."""

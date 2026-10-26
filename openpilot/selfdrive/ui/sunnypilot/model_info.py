@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import contextlib
 import os
+import re
 import time
 
 from openpilot.common.hardware.hw import Paths
@@ -88,6 +89,24 @@ def carrying_model() -> tuple[str | None, str | None, str | None]:
     return "qcom", bundle.internalName, bundle.displayName
   name = default_model_name("qcom")
   return "qcom", name, name
+
+
+def carrying_name() -> str:
+  """carrying_model's display name, for one line: a custom big with no fallback
+  names the big pick, which is what drives once it is ready."""
+  _, _, name = carrying_model()
+  if name is None:
+    big = get_selected_bundle(ui_state.params, "chestnut")
+    name = big.displayName if big else default_model_name("chestnut")
+  return name
+
+
+# a manifest name's release date, "(September 17, 2026)", or a default's "(Default)"
+NAME_SUFFIX = re.compile(r"\s*\([^()]*\)$")
+
+
+def short_name(name: str) -> str:
+  return NAME_SUFFIX.sub("", name)
 
 
 def queued_name(current_ref) -> str | None:
