@@ -672,46 +672,39 @@ class TestLayoutsSurviveRender:
       home._set_chestnut_visibility()
       assert home._usb_icon.is_visible == shown
 
-  @pytest.mark.parametrize("show_model", [False, True])
-  def test_home_layouts_render_with_the_model_name(self, params, show_model):
-    # HomeShowActiveModel gates a draw the default-off path never reaches, so the on path
-    # needs rendering too or the toggle ships untested. Both UIs draw it, mici on its footer
-    # row and tici on the header row, so both are checked here.
-    from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP
+  def test_home_model_toggle_reaches_both_homes(self, params, monkeypatch):
+    from openpilot.selfdrive.ui.sunnypilot import home_model
     from openpilot.selfdrive.ui.sunnypilot.layouts.home import HomeLayoutSP
+    from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP
     from openpilot.selfdrive.ui.ui_state import ui_state
 
-    params.put_bool("HomeShowActiveModel", show_model, block=True)
-    ui_state.update_params()
-    assert ui_state.home_show_active_model == show_model
-    render(MiciHomeLayoutSP())
-    render(HomeLayoutSP())
+    monkeypatch.setattr(home_model, "carrying_short_name", lambda: "MDMV3")
+    for on, name in ((False, None), (True, "MDMV3")):
+      params.put_bool("HomeShowActiveModel", on, block=True)
+      ui_state.update_params()
+      assert ui_state.home_model_name == name
+      render(MiciHomeLayoutSP())
+      render(HomeLayoutSP())
 
   def test_home_model_name_takes_the_footer_gap(self, params, monkeypatch):
-    # the name sits between the last visible icon and the alerts pill, and gives way when
-    # the icons and the pill leave too little room to read it
+    # right of the last visible icon, left of the alerts pill while it shows
     from openpilot.selfdrive.ui.sunnypilot.mici.layouts import home as home_mod
     from openpilot.selfdrive.ui.ui_state import ui_state
 
-    monkeypatch.setattr(home_mod, "carrying_name", lambda: "Cinque Terre V3 Model (September 17, 2026)")
-    monkeypatch.setattr(home_mod, "short_name", lambda name: "CTV3M")
-    monkeypatch.setattr(ui_state, "home_show_active_model", True)
+    monkeypatch.setattr(ui_state, "home_model_name", "MDMV3")
     home = home_mod.MiciHomeLayoutSP()
     drawn = []
-    monkeypatch.setattr(home._model_label, "render", lambda rect=None: drawn.append(rect))
+    monkeypatch.setattr(home_mod, "gui_label", lambda rect, text, *a, **k: drawn.append((rect, text)))
 
     render(home, 536, 240)
-    assert home._model_label.text == "ctv3m"
-    rect = drawn[-1]
-    assert rect.x + rect.width <= 536 - home_mod.HOME_PADDING
+    rect, text = drawn[-1]
+    assert text == "mdmv3"
+    assert rect.x + rect.width == 536 - home_mod.HOME_PADDING
 
     home.set_callbacks(alert_count_callback=lambda: 2)
-    for icon in (home._usb_icon, home._chestnut_failed_icon, home._mic_icon, home._body_icon):
-      monkeypatch.setattr(icon, "set_visible", lambda *_: None)
-      icon._is_visible = True
-    drawn.clear()
     render(home, 536, 240)
-    assert not drawn, "no room left: the name is hidden, not squeezed"
+    rect, _ = drawn[-1]
+    assert rect.x + rect.width <= home._alerts_pill.rect.x
 
 
 class TestRowDescriptions:

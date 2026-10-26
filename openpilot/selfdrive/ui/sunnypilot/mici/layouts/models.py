@@ -14,7 +14,7 @@ from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.sunnypilot.accelerator_link import big_model_note, big_model_progress, link_toggle_meaningful, standin_model
-from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_name,
+from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
                                                            default_model_name, model_cache_size_mb, model_info, queued_name,
                                                            refresh_in_progress, refresh_model_list)
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.button import BigMultiParamToggleSP
@@ -34,9 +34,13 @@ def _model_info() -> tuple[str, str, str]:
   """(active model, info header, info text) for the panel. Runner-matched: the
   active line names what actually drives, and a notable big-model state takes
   the info pair."""
-  source, _, other_name = model_info()
+  source, active_name, other_name = model_info()
   state = big_model_state()
-  active_text = carrying_name().lower()
+  _, _, carry_display = carrying_model()
+  if carry_display is None:
+    big = get_selected_bundle(ui_state.params, "chestnut")
+    carry_display = big.displayName if big else default_model_name("chestnut")
+  active_text = (carry_display or active_name).lower()
   provisioning = big_model_progress()
   if provisioning is not None:
     stage, frac, msg = provisioning

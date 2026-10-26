@@ -12,7 +12,7 @@ from openpilot.selfdrive.ui.sunnypilot import accelerator_link, model_info
 from openpilot.selfdrive.ui.sunnypilot.tests.helpers import jetlink_status
 from openpilot.selfdrive.ui.ui_state import ChestnutState
 from openpilot.sunnypilot.models.helpers import REQUIRED_JSON_VERSION
-from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_BIG_MODEL_REF, DEFAULT_MODEL, DEFAULT_MODEL_REF
+from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_MODEL
 
 V3_REF = "bf3e3631b3f91d92a1020a5e0dd4298b93ff4244"
 
@@ -70,83 +70,6 @@ class TestCarryingModel(OpenpilotTestCase):
     self.ui_state.jetlink = jetlink_status(enabled=True, mode='usb', present=True, ready=True, model="jetlink_big")
     assert model_info.carrying_model() == ("chestnut", "big_custom", "big_custom")
 
-
-  def test_one_line_name_follows_the_carrier(self):
-    self.ui_state.chestnut_state = ChestnutState.ACTIVE
-    self.ui_state.jetlink = jetlink_status(enabled=True, mode='usb', present=True, ready=True, model="big")
-    assert model_info.carrying_name() == "big"
-
-  def test_one_line_name_of_a_custom_big_with_no_fallback_is_the_pick(self):
-    # a fitted board that is not carrying yet, with a custom big picked: carrying_model has no answer
-    self.ui_state.chestnut_present = True
-    self.ui_state.is_offroad.return_value = False
-    self.ui_state.params.get.side_effect = lambda key: {"ModelManager_ActiveBundleChestnut": _raw_bundle("big_custom")}.get(key)
-    assert model_info.carrying_model() == (None, None, None)
-    assert model_info.carrying_name() == "big_custom"
-
-
-  def test_one_line_name_follows_jetlink_fall_over_and_handback(self):
-    # onroad the mici home is a tap away, so the name has to follow the carrier both ways
-    self.ui_state.is_offroad.return_value = False
-    link = jetlink_status(enabled=True, mode='usb', present=True, ready=True, model="big")
-    self.ui_state.jetlink = link
-    for state, name in ((ChestnutState.WAITING, "custom_small"),  # small drives until the swap window
-                        (ChestnutState.ACTIVE, "big"),            # joined
-                        (ChestnutState.FAILED, "custom_small"),   # link lost: the small model drives on
-                        (ChestnutState.LOADING, "custom_small"),  # rejoining
-                        (ChestnutState.ACTIVE, "big")):           # handed back
-      self.ui_state.chestnut_state = state
-      assert model_info.carrying_name() == name, state
-
-  def test_one_line_name_of_a_failed_default_big_chestnut_is_the_default_small(self):
-    # a Default big falls back to the Default small (stock modeld), never the small slot's pick
-    self.ui_state.chestnut_present = True
-    self.ui_state.is_offroad.return_value = False
-    self.ui_state.chestnut_active = True
-    assert model_info.carrying_name() == f"{DEFAULT_BIG_MODEL} (Default)"
-    self.ui_state.chestnut_active = False
-    self.ui_state.chestnut_state = ChestnutState.FAILED
-    assert model_info.carrying_name() == f"{DEFAULT_MODEL} (Default)"
-
-def _list_entry(short: str, display: str, ref: str) -> dict:
-  return {"index": 1, "short_name": short, "display_name": display, "ref": ref, "generation": 12, "environment": "release",
-          "minimum_selector_version": REQUIRED_JSON_VERSION, "models": []}
-
-
-class TestShortName(OpenpilotTestCase):
-  """The home names every model by its list's short name, whatever named it: a slot's
-  bundle, jetlink, or a slot default named for the tree."""
-
-  def setUp(self):
-    super().setUp()
-    model_info._short_name.cache_clear()
-    self.params = {
-      "ModelManager_ModelsCache": {"bundles": [_list_entry("C210M", "CD210 Model (February 03, 2026)", DEFAULT_MODEL_REF)]},
-      "ModelManager_ModelsCache_Chestnut": {"bundles": [
-        _list_entry("MDMV3", "Mountain Dew Model v3 (October 14, 2026)", DEFAULT_BIG_MODEL_REF),
-        _list_entry("CTV3M", "Cinque Terre V3 Model (September 17, 2026)", "c" * 40)]},
-      "ModelManager_LastSyncTime": 1, "ModelManager_LastSyncTime_Chestnut": 1,
-    }
-    ui_state = mock.MagicMock()
-    ui_state.params.get.side_effect = lambda key, **_: self.params.get(key)
-    patcher = mock.patch.object(model_info, "ui_state", ui_state)
-    patcher.start()
-    self.addCleanup(patcher.stop)
-
-  def test_every_kind_of_name_resolves(self):
-    for name, short in ((f"{DEFAULT_MODEL} (Default)", "C210M"),                     # the default small, named for the tree
-                        (f"{DEFAULT_BIG_MODEL} (Default)", "MDMV3"),                 # the chestnut's in-tree default
-                        ("Cinque Terre V3 Model (September 17, 2026)", "CTV3M"),     # a slot's pick
-                        ("Cinque Terre V3 Model", "CTV3M"),                          # jetlink's, undated
-                        ("A Delisted Model (May 1, 2026)", "A Delisted Model")):     # no list holds it
-      assert model_info.short_name(name) == short, name
-
-  def test_a_refetch_reads_the_list_again(self):
-    assert model_info.short_name("Flip Flop Model") == "Flip Flop Model"
-    self.params["ModelManager_ModelsCache_Chestnut"]["bundles"].append(_list_entry("FFM", "Flip Flop Model (October 23, 2026)", "f" * 40))
-    assert model_info.short_name("Flip Flop Model") == "Flip Flop Model", "memoized until the lists refetch"
-    self.params["ModelManager_LastSyncTime_Chestnut"] = 2
-    assert model_info.short_name("Flip Flop Model") == "FFM"
 
 class TestDefaultBigModelName(OpenpilotTestCase):
   """An empty big slot runs the chestnut's in-tree model when a board is fitted,

@@ -5,9 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import contextlib
-import functools
 import os
-import re
 import time
 
 from openpilot.common.hardware.hw import Paths
@@ -15,7 +13,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.sunnypilot.models.fetcher import get_cached_bundles
 from openpilot.sunnypilot.models.helpers import get_active_source, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.sunnypilot import jetlink_adapter
-from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_BIG_MODEL_REF, DEFAULT_MODEL, DEFAULT_MODEL_REF
+from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL
 
 
 def model_cache_size_mb() -> float:
@@ -90,39 +88,6 @@ def carrying_model() -> tuple[str | None, str | None, str | None]:
     return "qcom", bundle.internalName, bundle.displayName
   name = default_model_name("qcom")
   return "qcom", name, name
-
-
-def carrying_name() -> str:
-  """carrying_model's display name, for one line: a custom big with no fallback
-  names the big pick, which is what drives once it is ready."""
-  _, _, name = carrying_model()
-  if name is None:
-    big = get_selected_bundle(ui_state.params, "chestnut")
-    name = big.displayName if big else default_model_name("chestnut")
-  return name
-
-
-# a manifest name's release date, "(September 17, 2026)", or a default's "(Default)"
-NAME_SUFFIX = re.compile(r"\s*\([^()]*\)$")
-# the slot defaults are named for the tree, not for their list entry
-DEFAULT_REFS = {DEFAULT_MODEL: DEFAULT_MODEL_REF, DEFAULT_BIG_MODEL: DEFAULT_BIG_MODEL_REF}
-
-
-def short_name(name: str) -> str:
-  """The model lists' short name (MDMV3) for a name the UI shows: a bundle's
-  display name, jetlink's undated one, or a slot default's. Memoized until the
-  manager refetches a list; a name no cached list holds keeps its own, undated."""
-  return _short_name(NAME_SUFFIX.sub("", name), tuple(ui_state.params.get(key) for key in MODEL_SYNC_KEYS))
-
-
-@functools.lru_cache(maxsize=16)
-def _short_name(name: str, _synced: tuple) -> str:
-  ref = DEFAULT_REFS.get(name)
-  for source in ("qcom", "chestnut"):
-    for bundle in get_cached_bundles(ui_state.params, source):
-      if bundle.ref == ref or NAME_SUFFIX.sub("", bundle.displayName) == name:
-        return bundle.internalName
-  return name
 
 
 def queued_name(current_ref) -> str | None:

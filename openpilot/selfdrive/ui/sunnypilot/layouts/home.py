@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 from openpilot.selfdrive.ui.layouts.home import HomeLayout, HomeLayoutState, HEAD_BUTTON_FONT_SIZE, SPACING
-from openpilot.selfdrive.ui.sunnypilot.model_info import carrying_name, short_name
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -72,12 +71,11 @@ class HomeLayoutSP(HomeLayout):
     brand_rect = rl.Rectangle(max(version_left, brand_x), self.header_rect.y, brand_size.x, self.header_rect.height)
     gui_label(brand_rect, brand, BRAND_FONT_SIZE, rl.WHITE, font_weight=FontWeight.AUDIOWIDE)
 
-    # The model name shares the header row rather than taking one of its own: the row is a fixed
-    # HEADER_HEIGHT and a second line would clip. It sits left of the brand and gives way to it,
-    # so a long name elides instead of colliding.
-    if ui_state.home_show_active_model:
+    # the model's short name shares the fixed-height header row, left of the brand; it elides
+    # rather than overlap it
+    if ui_state.home_model_name:
       model_right = brand_rect.x - MODEL_GAP
       model_rect = rl.Rectangle(version_left, self.header_rect.y,
                                 model_right - version_left, self.header_rect.height)
       if model_rect.width > 0:
-        gui_label(model_rect, short_name(carrying_name()), MODEL_FONT_SIZE, MODEL_COLOR, alignment=TextAlignment.RIGHT)
+        gui_label(model_rect, ui_state.home_model_name, MODEL_FONT_SIZE, MODEL_COLOR, alignment=TextAlignment.RIGHT)
