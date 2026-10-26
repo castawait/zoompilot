@@ -1,6 +1,6 @@
 zoompilot vUNRELEASED
 ========================
-* Synced with sunnypilot of 2026-10-22, through openpilot of 2026-10-16.
+* Synced with sunnypilot of 2026-10-25, through openpilot of 2026-10-16.
 * Cruise
   * Experimental Mode is on by default for alpha longitudinal like openpilot 11.2
   * Experimental Mode may still be toggled off, unlike upstream, by long-pressing the car's
