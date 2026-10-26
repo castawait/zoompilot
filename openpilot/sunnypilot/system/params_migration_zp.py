@@ -4,12 +4,14 @@ Copyright (c) 2026-, Zeph Leggett.
 This file is part of zoompilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-zoompilot's one-time param migrations, run at boot beside sunnypilot's run_migration. Each
-keys on a marker param without a default: manager_init writes every declared default to disk,
-so a changed default never reaches a device that has booted before.
+zoompilot's boot hook beside sunnypilot's run_migration: one-time param migrations and the
+offroad car-default seeds. Each migration keys on a marker param without a default:
+manager_init writes every declared default to disk, so a changed default never reaches a device
+that has booted before.
 """
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.sunnypilot.selfdrive.car.mazda_torque_seed import seed_car_defaults_offroad
 
 E2E_ASSISTS_MIGRATED = "ExperimentalAssistsDefaultOn"
 E2E_ASSISTS = ("ExperimentalModeSetSpeed", "ExperimentalModeLeadGap")
@@ -31,3 +33,4 @@ def _migrate_e2e_assists_on(params: Params) -> None:
 
 def run_migration_zp(params: Params) -> None:
   _migrate_e2e_assists_on(params)
+  seed_car_defaults_offroad(params)

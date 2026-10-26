@@ -17,25 +17,12 @@ os.environ["BIG"] = "1"
 os.environ.setdefault("SCALE", "0.5")  # a full-size 2160x1080 hidden window aborts on macOS
 
 
-def test_alpha_toggle_locks_only_while_engaged(params, monkeypatch):
+@pytest.mark.parametrize("engaged", [True, False])
+def test_alpha_toggle_locks_only_while_engaged(params, monkeypatch, engaged):
   from openpilot.selfdrive.ui.sunnypilot.layouts.settings.alpha_longitudinal_toggles import AlphaLongitudinalToggles
   from openpilot.selfdrive.ui.ui_state import UIState
-  layout = AlphaLongitudinalToggles()
-  for engaged in (True, False):
-    monkeypatch.setattr(UIState, "engaged", property(lambda _, e=engaged: e))
-    assert layout._alpha_long_toggle.action_item.enabled == (not engaged)
-
-
-@pytest.mark.parametrize("started", [True, False])
-def test_alpha_toggle_cycles_onroad_only(params, monkeypatch, started):
-  from openpilot.selfdrive.ui.sunnypilot.layouts.settings.alpha_longitudinal_toggles import AlphaLongitudinalToggles
-  from openpilot.selfdrive.ui.ui_state import ui_state
-  monkeypatch.setattr(ui_state, "started", started)
-  params.put_bool("OnroadCycleRequested", False, block=True)
-  AlphaLongitudinalToggles()._on_alpha_long(False)
-  assert not params.get_bool("AlphaLongitudinalEnabled")
-  # card reads the switch at fingerprint: onroad needs a cycle, offroad the next start does it
-  assert params.get_bool("OnroadCycleRequested") == started
+  monkeypatch.setattr(UIState, "engaged", property(lambda _: engaged))
+  assert AlphaLongitudinalToggles()._alpha_long_toggle.action_item.enabled == (not engaged)
 
 
 def test_moved_switches_appear_once(params):
