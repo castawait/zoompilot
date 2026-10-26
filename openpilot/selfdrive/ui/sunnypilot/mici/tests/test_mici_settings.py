@@ -694,13 +694,14 @@ class TestLayoutsSurviveRender:
     from openpilot.selfdrive.ui.ui_state import ui_state
 
     monkeypatch.setattr(home_mod, "carrying_name", lambda: "Cinque Terre V3 Model (September 17, 2026)")
+    monkeypatch.setattr(home_mod, "short_name", lambda name: "CTV3M")
     monkeypatch.setattr(ui_state, "home_show_active_model", True)
     home = home_mod.MiciHomeLayoutSP()
     drawn = []
     monkeypatch.setattr(home._model_label, "render", lambda rect=None: drawn.append(rect))
 
     render(home, 536, 240)
-    assert home._model_label.text == "cinque terre v3 model"
+    assert home._model_label.text == "ctv3m"
     rect = drawn[-1]
     assert rect.x + rect.width <= 536 - home_mod.HOME_PADDING
 

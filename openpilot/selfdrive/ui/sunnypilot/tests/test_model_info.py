@@ -12,7 +12,7 @@ from openpilot.selfdrive.ui.sunnypilot import accelerator_link, model_info
 from openpilot.selfdrive.ui.sunnypilot.tests.helpers import jetlink_status
 from openpilot.selfdrive.ui.ui_state import ChestnutState
 from openpilot.sunnypilot.models.helpers import REQUIRED_JSON_VERSION
-from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_MODEL
+from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_BIG_MODEL_REF, DEFAULT_MODEL, DEFAULT_MODEL_REF
 
 V3_REF = "bf3e3631b3f91d92a1020a5e0dd4298b93ff4244"
 
@@ -108,10 +108,45 @@ class TestCarryingModel(OpenpilotTestCase):
     self.ui_state.chestnut_state = ChestnutState.FAILED
     assert model_info.carrying_name() == f"{DEFAULT_MODEL} (Default)"
 
-def test_short_name_drops_the_date_or_default_suffix():
-  assert model_info.short_name("Cinque Terre V3 Model (September 17, 2026)") == "Cinque Terre V3 Model"
-  assert model_info.short_name(f"{DEFAULT_MODEL} (Default)") == DEFAULT_MODEL
-  assert model_info.short_name(DEFAULT_BIG_MODEL) == DEFAULT_BIG_MODEL
+def _list_entry(short: str, display: str, ref: str) -> dict:
+  return {"index": 1, "short_name": short, "display_name": display, "ref": ref, "generation": 12, "environment": "release",
+          "minimum_selector_version": REQUIRED_JSON_VERSION, "models": []}
+
+
+class TestShortName(OpenpilotTestCase):
+  """The home names every model by its list's short name, whatever named it: a slot's
+  bundle, jetlink, or a slot default named for the tree."""
+
+  def setUp(self):
+    super().setUp()
+    model_info._short_name.cache_clear()
+    self.params = {
+      "ModelManager_ModelsCache": {"bundles": [_list_entry("C210M", "CD210 Model (February 03, 2026)", DEFAULT_MODEL_REF)]},
+      "ModelManager_ModelsCache_Chestnut": {"bundles": [
+        _list_entry("MDMV3", "Mountain Dew Model v3 (October 14, 2026)", DEFAULT_BIG_MODEL_REF),
+        _list_entry("CTV3M", "Cinque Terre V3 Model (September 17, 2026)", "c" * 40)]},
+      "ModelManager_LastSyncTime": 1, "ModelManager_LastSyncTime_Chestnut": 1,
+    }
+    ui_state = mock.MagicMock()
+    ui_state.params.get.side_effect = lambda key, **_: self.params.get(key)
+    patcher = mock.patch.object(model_info, "ui_state", ui_state)
+    patcher.start()
+    self.addCleanup(patcher.stop)
+
+  def test_every_kind_of_name_resolves(self):
+    for name, short in ((f"{DEFAULT_MODEL} (Default)", "C210M"),                     # the default small, named for the tree
+                        (f"{DEFAULT_BIG_MODEL} (Default)", "MDMV3"),                 # the chestnut's in-tree default
+                        ("Cinque Terre V3 Model (September 17, 2026)", "CTV3M"),     # a slot's pick
+                        ("Cinque Terre V3 Model", "CTV3M"),                          # jetlink's, undated
+                        ("A Delisted Model (May 1, 2026)", "A Delisted Model")):     # no list holds it
+      assert model_info.short_name(name) == short, name
+
+  def test_a_refetch_reads_the_list_again(self):
+    assert model_info.short_name("Flip Flop Model") == "Flip Flop Model"
+    self.params["ModelManager_ModelsCache_Chestnut"]["bundles"].append(_list_entry("FFM", "Flip Flop Model (October 23, 2026)", "f" * 40))
+    assert model_info.short_name("Flip Flop Model") == "Flip Flop Model", "memoized until the lists refetch"
+    self.params["ModelManager_LastSyncTime_Chestnut"] = 2
+    assert model_info.short_name("Flip Flop Model") == "FFM"
 
 class TestDefaultBigModelName(OpenpilotTestCase):
   """An empty big slot runs the chestnut's in-tree model when a board is fitted,

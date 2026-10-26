@@ -12,12 +12,14 @@ from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout, HOME_PADDIN
 from openpilot.selfdrive.ui.sunnypilot.longitudinal_mode import EXPERIMENTAL_ICON
 from openpilot.selfdrive.ui.sunnypilot.model_info import carrying_name, short_name
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
-from openpilot.system.ui.lib.application import FontWeight, TextAlignment, TextAlignmentVertical
+from openpilot.system.ui.lib.application import FontWeight, TextAlignment, TextAlignmentVertical, gui_app
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets.icon_widget import IconWidget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
 MODEL_ROW_HEIGHT = 48
 MODEL_ICON_GAP = 24
+MODEL_FONT_SIZE = 32
 MODEL_MIN_WIDTH = 96  # narrower than this, a scrolling name is a few letters at a time
 
 
@@ -33,7 +35,7 @@ class MiciHomeLayoutSP(MiciHomeLayout):
     self._status_bar_layout.add_widget(self._experimental_icon)
     self._status_bar_layout.widgets.insert(2, self._status_bar_layout.widgets.pop())
     # the models page's active model line, right aligned in the footer; a long name scrolls
-    self._model_label = UnifiedLabel("", 32, FontWeight.ROMAN, rl.Color(255, 255, 255, int(255 * 0.9 * 0.65)),
+    self._model_label = UnifiedLabel("", MODEL_FONT_SIZE, FontWeight.ROMAN, rl.Color(255, 255, 255, int(255 * 0.9 * 0.65)),
                                      alignment=TextAlignment.RIGHT, alignment_vertical=TextAlignmentVertical.MIDDLE, scroll=True)
 
   @staticmethod
@@ -72,7 +74,9 @@ class MiciHomeLayoutSP(MiciHomeLayout):
     right = self.rect.x + self.rect.width - HOME_PADDING
     if self._alert_count_callback and self._alert_count_callback() > 0:
       right = self._alerts_pill.rect.x - HOME_PADDING
-    if right - left < MODEL_MIN_WIDTH:
+    name = short_name(carrying_name()).lower()
+    # a name that fits always shows; one that does not scrolls, unless too little of it would
+    if right - left < min(measure_text_cached(gui_app.font(FontWeight.ROMAN), name, MODEL_FONT_SIZE).x, MODEL_MIN_WIDTH):
       return
-    self._model_label.set_text(short_name(carrying_name()).lower())
+    self._model_label.set_text(name)
     self._model_label.render(rl.Rectangle(left, self.rect.y + self.rect.height - MODEL_ROW_HEIGHT, right - left, MODEL_ROW_HEIGHT))
