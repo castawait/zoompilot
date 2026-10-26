@@ -14,7 +14,7 @@ from openpilot.system.ui.lib.application import ASSETS_DIR, gui_app
 
 EXP_ICON = "../../sunnypilot/selfdrive/assets/icons/experimental_white.png"  # upstream retired its copy with chill
 EXP_ICON_NUCLEUS = (0.479, 0.514, 0.125)  # nucleus centre and clear radius, as fractions of the icon width
-EXP_ORBITS_SIZE = 36  # orbit tips reach 0.56 of this from the nucleus (~20 px), leaving a whole rim on the 24 px dot
+EXP_ORBITS_SIZE = 40  # orbit tips reach 0.56 of this from the nucleus (~22.5 px), just inside the 24 px dot
 
 
 class ConfidenceBallSP:
