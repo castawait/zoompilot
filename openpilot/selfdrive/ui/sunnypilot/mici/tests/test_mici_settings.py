@@ -292,8 +292,8 @@ class TestRoadEdgeLaneChange:
     params.put("RoadEdgeLaneChangeEnabled", -1, block=True)
     assert read_road_edge_mode(params) == RoadEdgeMode.OFF
 
-  @pytest.mark.parametrize("mode, badge", [(1, "road-edge"), (2, "silent-edge")])
-  def test_button_badge_when_only_road_edge_on(self, params, mode, badge):
+  @pytest.mark.parametrize("mode", [1, 2])
+  def test_button_badge_when_only_road_edge_on(self, params, mode):
     from openpilot.selfdrive.ui.sunnypilot.mici.layouts.steering import SteeringLayoutMici
     from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
     from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeMode
@@ -303,7 +303,7 @@ class TestRoadEdgeLaneChange:
     params.put("RoadEdgeLaneChangeEnabled", mode, block=True)
     layout = SteeringLayoutMici()
     layout._update_state()
-    assert badge in (layout._lane_change_btn._badge_labels or [])
+    assert "road-edge" in (layout._lane_change_btn._badge_labels or [])
     assert not layout._lane_change_btn._disabled
 
     params.put("RoadEdgeLaneChangeEnabled", RoadEdgeMode.OFF, block=True)

@@ -20,16 +20,15 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.mads.helpers import MadsSteeringModeOnBrake, get_mads_limited_brands
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AUTO_LANE_CHANGE_TIMER, AutoLaneChangeMode
 from openpilot.sunnypilot.selfdrive.controls.lib.lane_change_smoothing import LEVEL_OFF, read_level
-from openpilot.sunnypilot.selfdrive.controls.lib.relc import read_road_edge_mode
+from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeMode, read_road_edge_mode
 from openpilot.sunnypilot.selfdrive.controls.lib.torque_tune import TUNE_PARAM_BY_SIZE, jerk_aware_has_effect, versions_by_label
 from openpilot.system.ui.lib.application import gui_app
 
 MADS_STEERING_MODE_LABELS = [tr("remain"), tr("pause"), tr("disengage")]
 # LaneChangeSmoothing stores the index into this list (lane_change_smoothing.LEVELS order, off first)
 LC_LEVEL_LABELS = [tr("off"), tr("fast"), tr("medium"), tr("slow"), tr("extra slow")]
-# RoadEdgeLaneChangeEnabled stores the index into these lists (relc.RoadEdgeMode)
+# RoadEdgeLaneChangeEnabled stores the index into this list (relc.RoadEdgeMode)
 ROAD_EDGE_LABELS = [tr("off"), tr("audible"), tr("silent")]
-ROAD_EDGE_BADGES = ["off", "on", tr("silent-edge")]
 
 # Keys match the stored modes, including -1 for off. Reuse the controller's timer values.
 ALC_LABELS = {
@@ -256,7 +255,7 @@ class SteeringLayoutMici(NavScroller):
     alc_val = self._alc_val = int(ui_state.params.get("AutoLaneChangeTimer", return_default=True) or AutoLaneChangeMode.NUDGE)
     # Hide the BSM delay when inactive without discarding the stored preference.
     lc_bsm = _on_off(ui_state.params.get_bool("AutoLaneChangeBsmDelay") and self._bsm_applies(alc_val))
-    road_edge = ROAD_EDGE_BADGES[read_road_edge_mode(ui_state.params)]
+    road_edge = _on_off(read_road_edge_mode(ui_state.params) != RoadEdgeMode.OFF)
     lc_level = read_level(ui_state.params)
     if alc_val <= AutoLaneChangeMode.OFF and lc_bsm == "off" and road_edge == "off" and lc_level == LEVEL_OFF:
       self._lane_change_btn.set_disabled()
